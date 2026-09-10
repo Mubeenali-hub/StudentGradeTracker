@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Grade Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+    h1 {
+      text-align: center;
+      color: #38bdf8;
+    }
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    input {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+    }
+    button {
+      padding: 10px;
+      background: #38bdf8;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0284c7;
+      color: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    th {
+      background: #334155;
+      color: #38bdf8;
+    }
+    .badge-pass {
+      background: #166534;
+      color: #86efac;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .badge-fail {
+      background: #991b1b;
+      color: #fca5a5;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Student Grade Tracker</h1>
+
+    <div class="card">
+      <h3>Add New Student</h3>
+      <form id="studentForm">
+        <input type="text" id="id" placeholder="Student ID (e.g. CS-103)" required />
+        <input type="text" id="name" placeholder="Student Name" required />
+        <input type="number" id="quiz" placeholder="Quiz (out of 100)" min="0" max="100" required />
+        <input type="number" id="mid" placeholder="Midterm (out of 100)" min="0" max="100" required />
+        <input type="number" id="finalExam" placeholder="Final (out of 100)" min="0" max="100" required />
+        <button type="submit">Add Student</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Student Records</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Quiz</th>
+            <th>Mid</th>
+            <th>Final</th>
+            <th>Total %</th>
+            <th>Grade</th>
+            <th>GPA</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="studentTableBody">
+          <!-- Data will be loaded via API -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+ const API_URL = '/api/students';
+
+    async function loadStudents() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const tbody = document.getElementById('studentTableBody');
+        tbody.innerHTML = '';
+
+        data.forEach(s => {
+          const statusClass = s.status === 'PASSED' ? 'badge-pass' : 'badge-fail';
+          const row = `
+            <tr>
+              <td>${s.id}</td>
+              <td>${s.name}</td>
+              <td>${s.quiz}</td>
+              <td>${s.mid}</td>
+              <td>${s.finalExam}</td>
+              <td>${s.total}%</td>
+              <td><strong>${s.grade}</strong></td>
+              <td>${s.gpa}</td>
+              <td><span class="${statusClass}">${s.status}</span></td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        });
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
+    }
+
+    document.getElementById('studentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        id: document.getElementById('id').value,
+        name: document.getElementById('name').value,
+        quiz: parseFloat(document.getElementById('quiz').value),
+        mid: parseFloat(document.getElementById('mid').value),
+        finalExam: parseFloat(document.getElementById('finalExam').value)
+      };
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      document.getElementById('studentForm').reset();
+      loadStudents();
+    });
+
+    loadStudents();
+  </script>
+</body>
+</html>

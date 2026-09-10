@@ -15,7 +15,7 @@
     }
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 950px;
     }
     h1 {
       text-align: center;
@@ -40,7 +40,12 @@
       background: #0f172a;
       color: #fff;
     }
-    button {
+    .search-bar {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+    }
+    button.btn-add {
       padding: 10px;
       background: #38bdf8;
       border: none;
@@ -49,9 +54,21 @@
       color: #0f172a;
       cursor: pointer;
     }
-    button:hover {
+    button.btn-add:hover {
       background: #0284c7;
       color: #fff;
+    }
+    button.btn-del {
+      padding: 6px 10px;
+      background: #ef4444;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.btn-del:hover {
+      background: #b91c1c;
     }
     table {
       width: 100%;
@@ -90,17 +107,18 @@
     <div class="card">
       <h3>Add New Student</h3>
       <form id="studentForm">
-        <input type="text" id="id" placeholder="Student ID (e.g. CS-103)" required />
+        <input type="text" id="id" placeholder="Student ID (e.g. CS-104)" required />
         <input type="text" id="name" placeholder="Student Name" required />
         <input type="number" id="quiz" placeholder="Quiz (out of 100)" min="0" max="100" required />
         <input type="number" id="mid" placeholder="Midterm (out of 100)" min="0" max="100" required />
         <input type="number" id="finalExam" placeholder="Final (out of 100)" min="0" max="100" required />
-        <button type="submit">Add Student</button>
+        <button type="submit" class="btn-add">Add Student</button>
       </form>
     </div>
 
     <div class="card">
       <h3>Student Records</h3>
+      <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search by Name or ID..." onkeyup="filterStudents()" />
       <table>
         <thead>
           <tr>
@@ -113,45 +131,66 @@
             <th>Grade</th>
             <th>GPA</th>
             <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
-        <tbody id="studentTableBody">
-          <!-- Data will be loaded via API -->
-        </tbody>
+        <tbody id="studentTableBody"></tbody>
       </table>
     </div>
   </div>
 
   <script>
- const API_URL = '/api/students';
+    const API_URL = '/api/students';
+    let allStudents = [];
 
     async function loadStudents() {
       try {
         const res = await fetch(API_URL);
-        const data = await res.json();
-        const tbody = document.getElementById('studentTableBody');
-        tbody.innerHTML = '';
-
-        data.forEach(s => {
-          const statusClass = s.status === 'PASSED' ? 'badge-pass' : 'badge-fail';
-          const row = `
-            <tr>
-              <td>${s.id}</td>
-              <td>${s.name}</td>
-              <td>${s.quiz}</td>
-              <td>${s.mid}</td>
-              <td>${s.finalExam}</td>
-              <td>${s.total}%</td>
-              <td><strong>${s.grade}</strong></td>
-              <td>${s.gpa}</td>
-              <td><span class="${statusClass}">${s.status}</span></td>
-            </tr>
-          `;
-          tbody.innerHTML += row;
-        });
+        allStudents = await res.json();
+        renderTable(allStudents);
       } catch (err) {
         console.error('Error fetching data:', err);
       }
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('studentTableBody');
+      tbody.innerHTML = '';
+
+      list.forEach(s => {
+        const statusClass = s.status === 'PASSED' ? 'badge-pass' : 'badge-fail';
+        const row = `
+          <tr>
+            <td>${s.id}</td>
+            <td>${s.name}</td>
+            <td>${s.quiz}</td>
+            <td>${s.mid}</td>
+            <td>${s.finalExam}</td>
+            <td>${s.total}%</td>
+            <td><strong>${s.grade}</strong></td>
+            <td>${s.gpa}</td>
+            <td><span class="${statusClass}">${s.status}</span></td>
+            <td>
+              <button class="btn-del" onclick="deleteStudent('${s.id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function filterStudents() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allStudents.filter(s => 
+        s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query)
+      );
+      renderTable(filtered);
+    }
+
+    async function deleteStudent(id) {
+      if (!confirm(`Are you sure you want to delete student ${id}?`)) return;
+      await fetch(`${API_URL}?id=${id}`, { method: 'DELETE' });
+      loadStudents();
     }
 
     document.getElementById('studentForm').addEventListener('submit', async (e) => {
